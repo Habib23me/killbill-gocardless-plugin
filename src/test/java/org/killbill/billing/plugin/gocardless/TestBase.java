@@ -30,6 +30,7 @@ import org.killbill.clock.ClockMock;
 import org.mockito.Mockito;
 
 import org.testng.annotations.BeforeMethod;
+import org.testng.SkipException;
 
 
 import com.gocardless.GoCardlessClient;
@@ -83,8 +84,15 @@ public class TestBase {
             properties = TestUtils.loadProperties(PROPERTIES_FILE_NAME);
         } catch (final RuntimeException ignored) {
             // Look up environment variables instead
-            properties.put("org.killbill.billing.plugin.gocardless.gocardlesstoken", System.getenv("GOCARDLESS_ACCESS_TOKEN"));
-            properties.put("org.killbill.billing.plugin.gocardless.environment", System.getenv("GOCARDLESS_ENVIRONMENT"));
+            final String token = System.getenv("GOCARDLESS_ACCESS_TOKEN");
+            final String environmentVar = System.getenv("GOCARDLESS_ENVIRONMENT");
+
+            if (token == null || token.isEmpty() || environmentVar == null || environmentVar.isEmpty()) {
+                throw new SkipException("Missing GoCardless credentials: set GOCARDLESS_ACCESS_TOKEN and GOCARDLESS_ENVIRONMENT or provide src/test/resources/" + PROPERTIES_FILE_NAME);
+            }
+
+            properties.put("org.killbill.billing.plugin.gocardless.gocardlesstoken", token);
+            properties.put("org.killbill.billing.plugin.gocardless.environment", environmentVar);
         }
         final GoCardlessConfigProperties goCardlessConfigProperties = new GoCardlessConfigProperties(properties, "");
         goCardlessconfigurationHandler.setDefaultConfigurable(goCardlessConfigProperties);
